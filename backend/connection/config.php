@@ -1,16 +1,21 @@
 <?php
 date_default_timezone_set('Asia/Ho_Chi_Minh');
 
-$servername = "localhost";
-$port = "3306";
-$username = "root";
-$password = "1234";
-$dbname = "expense_manager";
+// These values will be pulled from Vercel's Environment Variables
+$host = getenv('DB_HOST');
+$port = getenv('DB_PORT') ?: '5432';
+$dbname = getenv('DB_NAME') ?: 'postgres';
+$username = getenv('DB_USER') ?: 'postgres';
+$password = getenv('DB_PASSWORD');
 
-// Kết nối MySQL
-$conn = new mysqli($servername, $username, $password, $dbname, $port);
-
-// Kiểm tra kết nối
-if ($conn->connect_error) {
-    die("Kết nối thất bại: " . $conn->connect_error);
+try {
+    $dsn = "pgsql:host=$host;port=$port;dbname=$dbname;";
+    $conn = new PDO($dsn, $username, $password, [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+    ]);
+} catch (PDOException $e) {
+    // On Vercel, error_log is better than die() for debugging
+    error_log("Connection failed: " . $e->getMessage());
+    exit(json_encode(['success' => false, 'error' => 'Database connection error.']));
 }
