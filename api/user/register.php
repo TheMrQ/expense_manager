@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($insertStmt->execute([$username, $email, $hashedPassword])) {
             // Success: Redirect to login
-            header("Location: ../../frontend/login.html?registered=true");
+            header("Location: /login.html?registered=true");
             exit();
         } else {
             die("❌ Registration failed.");

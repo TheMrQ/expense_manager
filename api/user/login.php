@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['username'] = $user['username'];
 
-        header("Location: ../../frontend/dashboard.html");
+        header("Location: /dashboard.html");
         exit;
     } else {
         die("Invalid username or password.");
