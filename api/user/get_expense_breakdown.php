@@ -15,13 +15,11 @@ try {
         JOIN categories c ON t.category_id = c.id
         WHERE t.user_id = ? AND c.type = 'expense'
         GROUP BY c.name
-        HAVING total > 0
+        HAVING SUM(t.amount) > 0
         ORDER BY total DESC
     ");
-    $stmt->bind_param("i", $user_id);
-    $stmt->execute();
-    $result = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    $stmt->close();
+    $stmt->execute([$user_id]);
+    $result = $stmt->fetchAll();
 
     echo json_encode(['success' => true, 'data' => $result]);
 } catch (Exception $e) {

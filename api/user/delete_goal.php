@@ -10,45 +10,30 @@ header('Content-Type: application/json');
 $data = json_decode(file_get_contents('php://input'), true);
 $goal_id = filter_var($data['id'] ?? null, FILTER_VALIDATE_INT);
 
-if (!$goal_id) {
-    exit(json_encode(['success' => false, 'error' => 'Invalid goal ID.']));
-}
+if (!$goal_id) exit(json_encode(['success' => false, 'error' => 'Invalid ID.']));
 
 try {
-    $conn->begin_transaction();
-
-    // 1. Get the goal's name before deleting it
-    $stmt_get = $conn->prepare("SELECT name FROM goals WHERE id = ? AND user_id = ?");
-    $stmt_get->bind_param("ii", $goal_id, $user_id);
-    $stmt_get->execute();
-    $goal = $stmt_get->get_result()->fetch_assoc();
-    $stmt_get->close();
+    $conn->beginTransaction();
+    // 1. Get name for note
+    $stmt = $conn->prepare("SELECT name FROM goals WHERE id = ? AND user_id = ?");
+    $stmt->execute([$goal_id, $user_id]);
+    $goal = $stmt->fetch();
 
     if ($goal) {
-        // 2. Delete all associated contribution transactions from the ledger
-        $note_to_find = "Contribution to: " . $goal['name'];
-        $stmt_delete_trans = $conn->prepare("DELETE FROM transactions WHERE user_id = ? AND note = ?");
-        $stmt_delete_trans->bind_param("is", $user_id, $note_to_find);
-        $stmt_delete_trans->execute();
-        $stmt_delete_trans->close();
+        // 2. Delete transactions
+        $note = "Contribution to: " . $goal['name'];
+        $del_trans = $conn->prepare("DELETE FROM transactions WHERE user_id = ? AND note = ?");
+        $del_trans->execute([$user_id, $note]);
     }
 
-    // 3. Delete the goal itself (which will also cascade-delete from the 'contributions' table)
-    $stmt_delete_goal = $conn->prepare("DELETE FROM goals WHERE id = ? AND user_id = ?");
-    $stmt_delete_goal->bind_param("ii", $goal_id, $user_id);
-    $stmt_delete_goal->execute();
+    // 3. Delete goal
+    $del_goal = $conn->prepare("DELETE FROM goals WHERE id = ? AND user_id = ?");
+    $del_goal->execute([$goal_id, $user_id]);
 
-    if ($stmt_delete_goal->affected_rows > 0) {
-        $conn->commit();
-        echo json_encode(['success' => true, 'message' => 'Goal and all associated transactions deleted successfully.']);
-    } else {
-        // This can happen on a double-click, which is fine.
-        $conn->commit();
-        echo json_encode(['success' => true, 'message' => 'Goal removed.']);
-    }
-    $stmt_delete_goal->close();
+    $conn->commit();
+    echo json_encode(['success' => true, 'message' => 'Goal removed.']);
 } catch (Exception $e) {
-    $conn->rollback();
+    if ($conn->inTransaction()) $conn->rollback();
     http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Database error: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'error' => 'Database error.']);
 }

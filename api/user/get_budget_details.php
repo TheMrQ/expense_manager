@@ -1,26 +1,18 @@
 <?php
 require __DIR__ . '/../connection/config.php';
 session_start();
-if (!isset($_SESSION['user_id'])) {
-    exit(json_encode(['success' => false, 'error' => 'Not authenticated']));
-}
+if (!isset($_SESSION['user_id'])) exit(json_encode(['success' => false]));
+
 $user_id = $_SESSION['user_id'];
-$category_id = filter_input(INPUT_GET, 'category_id', FILTER_VALIDATE_INT);
-$month = date('Y-m');
+$cat_id = filter_input(INPUT_GET, 'category_id', FILTER_VALIDATE_INT);
 header('Content-Type: application/json');
 
-if (!$category_id) {
-    exit(json_encode(['success' => false, 'error' => 'Invalid ID']));
-}
-
 $stmt = $conn->prepare("SELECT category_id, budget_amount FROM budgets WHERE category_id = ? AND user_id = ? AND month = ?");
-$stmt->bind_param("iis", $category_id, $user_id, $month);
-$stmt->execute();
-$budget = $stmt->get_result()->fetch_assoc();
-$stmt->close();
+$stmt->execute([$cat_id, $user_id, date('Y-m')]);
+$budget = $stmt->fetch();
 
 if ($budget) {
     echo json_encode(['success' => true, 'data' => $budget]);
 } else {
-    echo json_encode(['success' => false, 'error' => 'Budget not found.']);
+    echo json_encode(['success' => false, 'error' => 'Not found.']);
 }

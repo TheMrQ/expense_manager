@@ -1,64 +1,32 @@
 <?php
 require __DIR__ . '/../connection/config.php';
 session_start();
-if (!isset($_SESSION['user_id'])) {
-    exit(json_encode(['success' => false, 'error' => 'Not authenticated']));
-}
+if (!isset($_SESSION['user_id'])) exit(json_encode(['success' => false]));
 
 $user_id = $_SESSION['user_id'];
 header('Content-Type: application/json');
 $data = json_decode(file_get_contents('php://input'), true);
-$bill_id = filter_var($data['id'] ?? null, FILTER_VALIDATE_INT);
-
-if (!$bill_id) {
-    exit(json_encode(['success' => false, 'error' => 'Invalid bill ID.']));
-}
+$bill_id = $data['id'] ?? null;
 
 try {
-    $conn->begin_transaction();
+    $conn->beginTransaction();
+    $stmt = $conn->prepare("SELECT name FROM bills WHERE id = ? AND user_id = ?");
+    $stmt->execute([$bill_id, $user_id]);
+    $bill = $stmt->fetch();
 
-    // 1. Get the bill's name to find the transaction
-    $stmt_bill = $conn->prepare("SELECT name FROM bills WHERE id = ? AND user_id = ?");
-    $stmt_bill->bind_param("ii", $bill_id, $user_id);
-    $stmt_bill->execute();
-    $bill = $stmt_bill->get_result()->fetch_assoc();
-    $stmt_bill->close();
-
-    if (!$bill) {
-        throw new Exception('Bill not found.');
+    if ($bill) {
+        $note = "Paid bill: " . $bill['name'];
+        $del = $conn->prepare("DELETE FROM transactions WHERE user_id = ? AND note = ? AND date >= DATE_TRUNC('month', CURRENT_DATE)");
+        $del->execute([$user_id, $note]);
     }
 
-    // 2. **THE FIX:** Delete the corresponding transaction
-    $note_to_find = "Paid bill: " . $bill['name'];
-    $current_month_start = date('Y-m-01');
-    $current_month_end = date('Y-m-t');
+    $upd = $conn->prepare("UPDATE bills SET last_paid_month = NULL WHERE id = ? AND user_id = ?");
+    $upd->execute([$bill_id, $user_id]);
 
-    $stmt_delete = $conn->prepare("
-        DELETE FROM transactions 
-        WHERE user_id = ? 
-        AND note = ? 
-        AND date BETWEEN ? AND ?
-        ORDER BY id DESC 
-        LIMIT 1
-    ");
-    $stmt_delete->bind_param("isss", $user_id, $note_to_find, $current_month_start, $current_month_end);
-    $stmt_delete->execute();
-    $stmt_delete->close();
-
-    // 3. Mark the bill as unpaid
-    $stmt_update = $conn->prepare("UPDATE bills SET last_paid_month = NULL WHERE id = ? AND user_id = ?");
-    $stmt_update->bind_param("ii", $bill_id, $user_id);
-    $stmt_update->execute();
-
-    if ($stmt_update->affected_rows > 0) {
-        $conn->commit();
-        echo json_encode(['success' => true, 'message' => 'Bill marked as unpaid and transaction removed.']);
-    } else {
-        throw new Exception('Bill not found or was already unpaid.');
-    }
-    $stmt_update->close();
+    $conn->commit();
+    echo json_encode(['success' => true, 'message' => 'Bill unpaid.']);
 } catch (Exception $e) {
-    $conn->rollback();
+    if ($conn->inTransaction()) $conn->rollback();
     http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Database error: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'error' => 'Database error.']);
 }

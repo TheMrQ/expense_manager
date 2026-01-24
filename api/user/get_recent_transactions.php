@@ -24,17 +24,23 @@ $limit = filter_input(INPUT_GET, 'limit', FILTER_VALIDATE_INT, [
 ]);
 
 try {
+    // PDO uses a different approach for LIMIT with parameters. 
+    // We bind the values directly in execute() for simplicity.
     $stmt = $conn->prepare("
         SELECT t.id, c.name AS category_name, c.type AS category_type, t.amount, t.note, t.date, t.currency
         FROM transactions t JOIN categories c ON t.category_id = c.id
         WHERE t.user_id = ?
-        ORDER BY t.date DESC, t.created_at DESC
+        ORDER BY t.date DESC, t.id DESC
         LIMIT ?
     ");
-    $stmt->bind_param("ii", $user_id, $limit);
+
+    // In PDO, if you want to use a variable for LIMIT, you must often bind it as an integer 
+    // or ensure the emulation is handled. Using the array in execute() works best here.
+    $stmt->bindValue(1, $user_id, PDO::PARAM_INT);
+    $stmt->bindValue(2, $limit, PDO::PARAM_INT);
     $stmt->execute();
-    $transactions = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    $stmt->close();
+
+    $transactions = $stmt->fetchAll();
 
     echo json_encode(['success' => true, 'data' => $transactions]);
 } catch (Exception $e) {
