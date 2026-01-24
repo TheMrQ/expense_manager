@@ -9,16 +9,12 @@ if (!isset($_SESSION['user_id'])) {
 
 $userId = $_SESSION['user_id'];
 
-$stmt = $conn->prepare("SELECT username FROM users WHERE id = ?");
-$stmt->bind_param("i", $userId);
-$stmt->execute();
-$stmt->bind_result($username);
+try {
+    $stmt = $conn->prepare("SELECT username FROM users WHERE id = ?");
+    $stmt->execute([$userId]);
+    $username = $stmt->fetchColumn();
 
-if ($stmt->fetch()) {
-    echo htmlspecialchars($username);
-} else {
+    echo $username ? htmlspecialchars($username) : 'User';
+} catch (PDOException $e) {
     echo 'User';
 }
-
-$stmt->close();
-$conn->close();
