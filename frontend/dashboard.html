@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zenith</title>
+<link rel="icon"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2327ae60'%3E%3Cpath d='M4 18h2v-5H4v5zm4 0h2v-9H8v9zm4 0h2v-3h-2v3zm4 0h2V7h-2v11zM2 20h20v2H2v-2z'/%3E%3C/svg%3E">
+    <!-- FontAwesome & Calendar Styles -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vanillajs-datepicker@1.3.4/dist/css/datepicker.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS (optional, but good for base utility classes if you use them) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <style type="text/tailwindcss">
+        @layer base {
+            html {
+                font-family: 'Inter', sans-serif; /* Using Inter for consistent look */
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/dark-theme.css">
+    <!-- Local Styles -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/balance.css">
+
+</head>
+
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand-container">
+                <svg class="brand-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M4 18h2v-5H4v5zm4 0h2v-9H8v9zm4 0h2v-3h-2v3zm4 0h2V7h-2v11zM2 20h20v2H2v-2z" />
+                </svg>
+                <h2 class="brand-name">Zenith</h2>
+            </div>
+            <nav class="sidebar-menu">
+                <a href="#" class="sidebar-link active" data-section="overview"><i class="fas fa-home icon"></i>Overview</a>
+                <a href="#" class="sidebar-link" data-section="balances"><i class="fas fa-wallet icon"></i>Balances</a>
+            
+                <div class="submenu">
+                    <a href="#" class="submenu-toggle">
+                        <i class="fas fa-chart-bar icon"></i>Activity<i class="fas fa-chevron-down arrow"></i>
+                    </a>
+                    <div class="submenu-links">
+                        <a href="#" class="sidebar-link" data-section="transactions"><i
+                                class="fas fa-exchange-alt icon"></i>Transactions</a>
+                        <a href="#" class="sidebar-link" data-section="bills"><i class="fas fa-file-invoice icon"></i>Bills</a>
+                        <a href="#" class="sidebar-link" data-section="expenses"><i class="fas fa-chart-line icon"></i>Expenses</a>
+                    </div>
+                </div>
+            
+                <div class="submenu">
+                    <a href="#" class="submenu-toggle">
+                        <i class="fas fa-clipboard-list icon"></i>Planning<i class="fas fa-chevron-down arrow"></i>
+                    </a>
+                    <div class="submenu-links">
+                        <a href="#" class="sidebar-link" data-section="goals"><i class="fas fa-bullseye icon"></i>Goals</a>
+                        <a href="#" class="sidebar-link" data-section="budgets"><i class="fas fa-tasks icon"></i>Budgets</a>
+                    </div>
+                </div>
+            
+                <a href="#" class="sidebar-link" data-section="settings"><i class="fas fa-cog icon"></i>Settings</a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <img src="assets/default-avatar.png" alt="User Avatar" id="sidebarAvatar">
+                    <span id="sidebarUsername">Username</span>
+                </div>
+                <button class="btn logout-btn" onclick="location.href='../backend/user/logout.php'">
+                    <i class="icon fas fa-sign-out-alt"></i>
+                    Logout
+                </button>      </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="dashboard-header">
+                <h1>
+                    Welcome <span id="username">...</span> 👋
+                </h1>
+                <div class="currency-selector-wrapper">
+                    <div class="custom-select-trigger">
+                        <span id="selectedCurrency">USD</span>
+                        <i class="fas fa-chevron-down" style="font-size: 0.7em;"></i>
+                    </div>
+                    <div id="customOptionsContainer" class="custom-select-options">
+                    </div>
+                    <select id="currencySelector"></select>
+                </div>
+            </header>
+
+            <!-- Overview Section -->
+            <section id="overview-section" class="content-section active-section">
+                
+                <div class="overview-grid">
+                    <div id="overviewStatsContainer" class="overview-stats-container">
+                    </div>
+            
+                    <div class="card overview-card" id="top-expenses-card">
+                        <h4>Top 5 Expenses (This Month)</h4>
+                        <canvas id="topExpensesChart"></canvas>
+                    </div>
+            
+                    <div class="card overview-card recent-transactions-card" id="recent-activity-card">
+                        <h4>Recent Activity</h4>
+                        <ul id="overviewRecentActivityList" class="transaction-list"></ul>
+                    </div>
+            
+                    <div class="card overview-card" id="calendar-card">
+                        <h4>Calendar</h4>
+                        <div id="calendarInline"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Transactions Section -->
+            <section id="transactions-section" class="content-section">
+                <div class="transactions-header">
+                    <button class="btn add-transaction-btn" onclick="openTransactionModal()">+ Add Transaction</button>
+                </div>
+            
+                <div id="transactionsContainer" class="transactions-layout">
+            
+                    <div id="transactionsLoading" class="loading-spinner"></div>
+            
+                    <div class="card recent-transactions-card hidden">
+                        <h3>Recent Transactions</h3>
+                        <ul id="recentTransactionsList" class="transaction-list">
+                        </ul>
+                    </div>
+            
+                    <div id="monthlyTransactionsContainer"></div>
+            
+                    <div id="noTransactionsMessage" class="no-transactions-message hidden">
+                        No transactions recorded yet. Add one to get started!
+                    </div>
+            
+                </div>  </section>
+
+            <!-- Balances Section (Placeholder) -->
+
+            <section id="balances-section" class="content-section">
+                <div id="balancesContainer" class="balances-grid">
+                </div>
+                <div id="financialSummaryContainer" class="summary-grid">
+                </div>
+            
+                <div class="card recent-transactions-card" style="display: none;">
+                    <h3>Recent Transactions</h3>
+                    <ul id="balanceRecentTransactionsList" class="transaction-list"></ul>
+                </div>
+
+                <div class="card report-generator">
+                    <h4>Generate a Financial Report</h4>
+                    <div class="report-controls">
+                        <div class="form-group">
+                            <label for="startDate">Start Date</label>
+                            <input type="date" id="startDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="endDate">End Date</label>
+                            <input type="date" id="endDate">
+                        </div>
+                        <button id="generateReportBtn" class="btn">Generate Report</button>
+                    </div>
+                </div>
+                
+                <div id="reportOutput" class="hidden">
+                    <div class="report-header">
+                        <button id="downloadPdfBtn" class="btn"><i class="fas fa-file-download"></i> Download PDF</button>
+                    </div>
+                    <div id="reportContent" class="card">
+                    </div>
+                </div>
+            
+                
+            </section>
+
+            <section id="budgets-section" class="content-section">
+                <button class="btn add-budget-btn" onclick="openBudgetModal()">+ Set Budget</button>
+                <div id="budgetsContainer" class="budgets-grid">
+                </div>
+            </section>
+
+            <!-- Bills Section (Placeholder) -->
+            <section id="bills-section" class="content-section">
+                <button class="btn add-bill-btn" onclick="openBillModal()">+ Add Recurring Bill</button>
+                <div class="bills-container">
+                    <div class="bills-column">
+                        <h3>Upcoming Bills</h3>
+                        <ul id="upcomingBillsList" class="bills-list"></ul>
+                    </div>
+                    <div class="bills-column">
+                        <h3>Paid This Month</h3>
+                        <ul id="paidBillsList" class="bills-list"></ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Expenses Section (Placeholder) -->
+            <section id="expenses-section" class="content-section">
+                <div id="comparisonContainer" class="comparison-grid"></div>
+
+                <div class="expense-charts-grid">
+                    <div class="card chart-card">
+                        <h3>Monthly Summary</h3>
+                        <canvas id="monthlyBarChart"></canvas>
+                    </div>
+                    <div class="card chart-card">
+                        <h3>Expense Breakdown</h3>
+                        <canvas id="expenseDoughnutChart"></canvas>
+                    </div>
+                </div>  
+            </section>
+
+            <!-- Goals Section (Placeholder) -->
+            <section id="goals-section" class="content-section">
+                <button class="btn add-goal-btn" onclick="openGoalModal()">+ Add New Goal</button>
+                <div id="goalsContainer" class="goals-grid">
+                </div>
+            </section>
+
+            <section id="settings-section" class="content-section">
+                <div class="card settings-card">
+                    <h3>Profile Settings</h3>
+                    <form id="profileSettingsForm" enctype="multipart/form-data">
+                        <div class="avatar-upload">
+                            <img src="" alt="Current Avatar" id="settingsAvatarPreview">
+                            <label for="avatarInput" class="avatar-edit-btn">
+                                <i class="fas fa-pencil-alt"></i>
+                            </label>
+                            <input type="file" id="avatarInput" name="avatar" accept="image/*" style="display: none;">
+                        </div>
+                        <div class="form-group">
+                            <label for="usernameInput">Username</label>
+                            <input type="text" id="usernameInput" name="username" required>
+                        </div>
+                        <button type="submit" class="btn save-btn">Save Changes</button>
+                    </form>
+                    <button id="removeAvatarBtn" class="btn remove-btn">Remove Avatar</button>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Modal for Add/Edit Transaction -->
+    <div class="modal-overlay" id="transactionModal">
+        <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="modalTitle">Add Transaction</h2>
+            <button type="button" class="close-btn" onclick="closeTransactionModal()">&times;</button>
+        </div>
+
+            <form id="transactionForm">
+                <input type="hidden" id="transactionId" name="transaction_id">
+
+                <div>
+                    <label for="currency">Currency</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-money-bill-wave input-icon"></i>
+                        <select id="currency" name="currency" required>
+                            <option value="USD">USD</option>
+                            <option value="VND">VND</option>
+                            <option value="EUR">EUR</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="category">Category</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-tags input-icon"></i>
+                        <select id="category" name="category_id" required>
+                            <option value="">Select Category</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="amount">Amount</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-dollar-sign input-icon"></i>
+                        <input type="number" id="amount" name="amount" required placeholder="e.g. 50.00">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="date">Date</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-calendar-alt input-icon"></i>
+                        <input type="date" id="date" name="date" required placeholder="YYYY-MM-DD">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="note">Note</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-sticky-note input-icon"></i>
+                        <input type="text" id="note" name="note" placeholder="e.g. Coffee shop, Groceries">
+                    </div>
+                </div>
+
+                <div class="modal-buttons">
+                    <button type="button" class="btn cancel-btn" onclick="closeTransactionModal()">Cancel</button>
+                    <button type="submit" class="btn save-btn">Save</button>
+                </div>
+            </form>
+            <div id="messageBox" class="hidden"></div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal for Deletion -->
+    <div class="modal-overlay" id="confirmationModal">
+        <div class="modal-content confirmation-modal-content">
+            <!-- NEW: Caution Icon -->
+            <div class="confirmation-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h2 id="confirmationTitle">Confirm Deletion</h2>
+            <p id="confirmationMessage">Are you sure you want to delete this transaction? This action cannot be undone.
+            </p>
+            <div class="modal-buttons">
+                <button type="button" class="btn cancel-btn" id="confirmCancelBtn">Cancel</button>
+                <button type="button" class="btn delete-confirm-btn" id="confirmOkBtn">Delete</button>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="modal-overlay" id="billModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Recurring Bill</h2>
+                <button type="button" class="close-btn" onclick="closeBillModal()">&times;</button>
+            </div>
+            <form id="billForm">
+                <input type="hidden" id="billId" name="bill_id">
+                <div>
+                    <label for="billName">Bill Name</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-file-invoice input-icon"></i>
+                        <input type="text" id="billName" name="name" required placeholder="e.g., Netflix, Rent">
+                    </div>
+                </div>
+                <div>
+                    <label for="billAmount">Amount (USD)</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-dollar-sign input-icon"></i>
+                        <input type="number" id="billAmount" name="amount" required step="0.01" placeholder="e.g., 15.99">
+                    </div>
+                </div>
+                <div>
+                    <label for="billDueDate">Due Day of Month</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-calendar-day input-icon"></i>
+                        <input type="number" id="billDueDate" name="due_date" required min="1" max="31" placeholder="e.g., 15">
+                    </div>
+                </div>
+                <div>
+                    <label for="billCategory">Category</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-tags input-icon"></i>
+                        <select id="billCategory" name="category_id" required></select>
+                    </div>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn cancel-btn" onclick="closeBillModal()">Cancel</button>
+                    <button type="submit" class="btn save-btn">Save Bill</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="goalModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add a New Goal</h2>
+                <button type="button" class="close-btn" onclick="closeGoalModal()">&times;</button>
+            </div>
+            <form id="goalForm">
+                <div>
+                    <label for="goalName">Goal Name</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-bullseye input-icon"></i>
+                        <input type="text" id="goalName" name="name" required placeholder="e.g., New Laptop, Vacation">
+                    </div>
+                </div>
+                <div>
+                    <label for="goalTarget">Target Amount</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-dollar-sign input-icon"></i>
+                        <input type="number" id="goalTarget" name="target_amount" required step="0.01" placeholder="e.g., 1500.00">
+                    </div>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn cancel-btn" onclick="closeGoalModal()">Cancel</button>
+                    <button type="submit" class="btn save-btn">Save Goal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="modal-overlay" id="contributionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="contributionModalTitle">Contribute to Goal</h2>
+                <button type="button" class="close-btn" onclick="closeContributionModal()">&times;</button>
+            </div>
+            <form id="contributionForm">
+                <input type="hidden" id="contributionGoalId" name="goal_id">
+                <div>
+                    <label for="contributionAmount">Amount to Add</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-dollar-sign input-icon"></i>
+                        <input type="number" id="contributionAmount" name="amount" required step="0.01" placeholder="e.g., 50.00">
+                    </div>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn cancel-btn" onclick="closeContributionModal()">Cancel</button>
+                    <button type="submit" class="btn save-btn">Add Funds</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <div class="modal-overlay" id="budgetModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Set a Monthly Budget</h2>
+                <button type="button" class="close-btn" onclick="closeBudgetModal()">&times;</button>
+            </div>
+            <form id="budgetForm">
+                <div class="form-group">
+                    <label for="budgetCategory">Category</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-tags input-icon"></i>
+                        <select id="budgetCategory" name="category_id" required></select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="budgetAmount">Budget Amount</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-dollar-sign input-icon"></i>
+                        <input type="number" id="budgetAmount" name="budget_amount" required step="0.01" placeholder="e.g., 500.00">
+                    </div>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn cancel-btn" onclick="closeBudgetModal()">Cancel</button>
+                    <button type="submit" class="btn save-btn">Set Budget</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JS Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/vanillajs-datepicker@1.3.4/dist/js/datepicker.min.js"></script>
+    <script src="js/dashboard.js"></script>
+    
+</body>
+
+</html>
