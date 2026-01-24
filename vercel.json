@@ -1,17 +1,21 @@
 {
   "functions": {
-    "backend/**/*.php": {
+    "api/**/*.php": {
       "runtime": "vercel-php@0.7.0"
     }
   },
   "routes": [
     {
-      "src": "/backend/(.*).php",
-      "dest": "/backend/$1.php"
+      "src": "/api/(.*).php",
+      "dest": "/api/$1.php"
     },
     {
       "src": "/(.*)",
       "dest": "/frontend/$1"
+    },
+    {
+      "src": "/",
+      "dest": "/frontend/login.html"
     }
   ]
 }
