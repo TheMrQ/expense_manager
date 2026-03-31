@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 1. Update Header Text ---
     if (targetSectionId === 'overview') {
         dashboardHeader.innerHTML = 'Welcome <span id="username">...</span> 👋';
-        fetch('../api/user/getUsername.php')
+        fetch('../backend/user/getUsername.php')
             .then(response => response.text())
             .then(name => {
                 const userSpan = document.getElementById('username');
@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // CORRECTED: This now targets the correct element ID from your HTML
         populateRecentTransactions(4, 'overviewRecentActivityList');
 
-        fetch('../api/user/get_top_expenses.php')
+        fetch('../backend/user/get_top_expenses.php')
             .then(res => res.json())
             .then(result => {
                 if (result.success) createTopExpensesChart(result.data);
@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // === Fetch & Set Username ===
-fetch('../api/user/getUsername.php')
+fetch('../backend/user/getUsername.php')
     .then(response => response.text())
     .then(name => document.getElementById('username').textContent = name)
     .catch(err => {
@@ -333,7 +333,7 @@ function showMessage(message, type = 'success') {
 }
 
 function fetchCategories() {
-    return fetch('../api/user/get_categories.php')
+    return fetch('../backend/user/get_categories.php')
         .then(response => response.json())
         .then(result => {
             if (result.success) {
@@ -370,7 +370,7 @@ transactionForm.addEventListener('submit', function(event) {
     event.preventDefault();
     const formData = new FormData(this);
     const transactionId = formData.get('transaction_id');
-    const url = transactionId ? '../api/user/update_transaction.php' : '../api/user/add_transaction.php';
+    const url = transactionId ? '../backend/user/update_transaction.php' : '../backend/user/add_transaction.php';
     
     fetch(url, { method: 'POST', body: formData })
     .then(response => response.json())
@@ -430,7 +430,7 @@ const calendarContainer = document.getElementById('calendarInline');
 let calendar; 
 
 function fetchAndHighlightTransactions(month) {
-    fetch(`../api/user/get_user_transactions_by_month.php?month=${month}`)
+    fetch(`../backend/user/get_user_transactions_by_month.php?month=${month}`)
         .then(response => response.json())
         .then(result => {
             if (result.success) {
@@ -545,8 +545,8 @@ function loadRecentActivityCard() {
 
     // Fetch both recent transactions and all-time stats at the same time
     Promise.all([
-        fetch('../api/user/get_recent_transactions.php?limit=3').then(res => res.json()),
-        fetch('../api/user/get_all_time_stats.php').then(res => res.json())
+        fetch('../backend/user/get_recent_transactions.php?limit=3').then(res => res.json()),
+        fetch('../backend/user/get_all_time_stats.php').then(res => res.json())
     ])
     .then(([recentResult, statsResult]) => {
         listElement.innerHTML = ''; // Clear loading
@@ -620,7 +620,7 @@ function fetchTransactions() {
     monthlyTransactionsContainer.innerHTML = '';
     noTransactionsMsg.style.display = 'none'; // Hide the old text message initially
 
-    fetch('../api/user/get_monthly_transactions.php')
+    fetch('../backend/user/get_monthly_transactions.php')
         .then(response => response.json())
         .then(result => {
             loadingSpinner.classList.add('hidden');
@@ -685,7 +685,7 @@ function fetchAndDisplayBalances() {
 
     const container = document.getElementById('balancesContainer');
     
-    fetch('../api/user/get_balances.php')
+    fetch('../backend/user/get_balances.php')
         .then(response => response.json())
         .then(result => {
             container.innerHTML = ''; // Clear previous balance cards
@@ -749,7 +749,7 @@ transactionsContainer.addEventListener('click', function (event) {
         const transactionId = transactionItem.dataset.id;
 
         // Fetch the details for this specific transaction
-        fetch(`../api/user/get_transaction_details.php?id=${transactionId}`)
+        fetch(`../backend/user/get_transaction_details.php?id=${transactionId}`)
             .then(response => response.json())
             .then(result => {
                 if (result.success) {
@@ -773,7 +773,7 @@ transactionsContainer.addEventListener('click', function (event) {
         // Show the confirmation dialog
         showConfirmationModal(() => {
             // This code runs only if the user clicks "Delete"
-            fetch('../api/user/delete_transaction.php', {
+            fetch('../backend/user/delete_transaction.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: transactionId })
@@ -811,7 +811,7 @@ function populateRecentTransactions(limit, listElementId) {
     cardElement.style.display = 'block';
     listElement.innerHTML = '<li>Loading...</li>';
 
-    fetch(`../api/user/get_recent_transactions.php?limit=${limit}`)
+    fetch(`../backend/user/get_recent_transactions.php?limit=${limit}`)
         .then(response => response.json())
         .then(result => {
             listElement.innerHTML = ''; // Clear loading state
@@ -968,8 +968,8 @@ function loadExpenseCharts() {
     loadComparisonData();
 
     Promise.all([
-        fetch('../api/user/get_monthly_summary.php').then(res => res.json()),
-        fetch('../api/user/get_expense_breakdown.php').then(res => res.json())
+        fetch('../backend/user/get_monthly_summary.php').then(res => res.json()),
+        fetch('../backend/user/get_expense_breakdown.php').then(res => res.json())
     ])
     .then(([summaryResult, breakdownResult]) => {
         if (summaryResult.success) {
@@ -987,7 +987,7 @@ function loadComparisonData() {
     const container = document.getElementById('comparisonContainer');
     container.innerHTML = 'Loading comparisons...';
 
-    fetch('../api/user/get_comparison_data.php')
+    fetch('../backend/user/get_comparison_data.php')
         .then(res => res.json())
         .then(result => {
             container.innerHTML = '';
@@ -1059,7 +1059,7 @@ function loadFinancialSummary() {
     const container = document.getElementById('financialSummaryContainer');
     container.innerHTML = '';
 
-    fetch('../api/user/get_financial_summary.php')
+    fetch('../backend/user/get_financial_summary.php')
         .then(res => res.json())
         .then(result => {
             if (!result.success) return;
@@ -1144,7 +1144,7 @@ function loadFinancialSummary() {
 // --- Original Settings Page Logic ---
 
 function loadUserDetails() {
-    fetch('../api/user/get_user_details.php')
+    fetch('../backend/user/get_user_details.php')
         .then(res => res.json())
         .then(result => {
             if(result.success) {
@@ -1181,7 +1181,7 @@ if (profileSettingsForm) {
         e.preventDefault();
         const formData = new FormData(this);
         
-        fetch('../api/user/update_profile.php', { method: 'POST', body: formData })
+        fetch('../backend/user/update_profile.php', { method: 'POST', body: formData })
             .then(res => res.json())
             .then(result => {
                 if(result.success) {
@@ -1199,7 +1199,7 @@ document.getElementById('removeAvatarBtn')?.addEventListener('click', function()
     if (confirm('Are you sure you want to remove your avatar?')) {
         const formData = new FormData();
         formData.append('action', 'remove_avatar');
-        fetch('../api/user/update_profile.php', { method: 'POST', body: formData })
+        fetch('../backend/user/update_profile.php', { method: 'POST', body: formData })
             .then(res => res.json())
             .then(result => {
                 if(result.success) {
@@ -1218,7 +1218,7 @@ function loadOverviewStats() {
     // This line fixes the duplicate card issue by clearing the container first
     container.innerHTML = ''; 
 
-    fetch('../api/user/get_overview_stats.php')
+    fetch('../backend/user/get_overview_stats.php')
         .then(res => res.json())
         .then(result => {
             if (!result.success) return;
@@ -1296,7 +1296,7 @@ function openBillModal(billData = null) {
     const billIdInput = document.getElementById('billId');
     billForm.reset();
 
-    fetch('../api/user/get_categories.php')
+    fetch('../backend/user/get_categories.php')
         .then(res => res.json())
         .then(result => {
             categorySelect.innerHTML = '<option value="">Select Category</option>';
@@ -1337,7 +1337,7 @@ function fetchBills() {
     upcomingList.innerHTML = '<li>Loading...</li>';
     paidList.innerHTML = ''; // Start paid list empty
 
-    fetch('../api/user/get_bills.php')
+    fetch('../backend/user/get_bills.php')
         .then(res => res.json())
         .then(result => {
             upcomingList.innerHTML = '';
@@ -1406,14 +1406,14 @@ document.addEventListener('click', function(e) {
     const deleteTransactionBtn = e.target.closest('.delete-btn');
     if (editTransactionBtn) {
         const transactionId = editTransactionBtn.closest('.transaction-item').dataset.id;
-        fetch(`../api/user/get_transaction_details.php?id=${transactionId}`)
+        fetch(`../backend/user/get_transaction_details.php?id=${transactionId}`)
             .then(res => res.json())
             .then(result => { if (result.success) openTransactionModal(result.data); });
     }
     if (deleteTransactionBtn) {
         const transactionId = deleteTransactionBtn.closest('.transaction-item').dataset.id;
         showConfirmationModal(() => {
-            fetch('../api/user/delete_transaction.php', {
+            fetch('../backend/user/delete_transaction.php', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ id: transactionId })
@@ -1441,27 +1441,27 @@ document.addEventListener('click', function(e) {
     if (payBtn) {
         const billId = payBtn.dataset.id;
         if(confirm('This will create a new expense transaction. Are you sure?')) {
-            fetch('../api/user/pay_bill.php', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id: billId })})
+            fetch('../backend/user/pay_bill.php', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id: billId })})
             .then(res => res.json()).then(result => { if (result.success) fetchBills(); else alert('Error: ' + result.error); });
         }
     }
     if (deleteBillBtn) {
         const billId = deleteBillBtn.dataset.id;
         if(confirm('Are you sure you want to permanently delete this recurring bill?')) {
-            fetch('../api/user/delete_bill.php', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id: billId })})
+            fetch('../backend/user/delete_bill.php', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id: billId })})
             .then(res => res.json()).then(result => { if (result.success) fetchBills(); else alert('Error: ' + result.error); });
         }
     }
     if (editBillBtn) {
         const billId = editBillBtn.dataset.id;
-        fetch(`../api/user/get_bill_details.php?id=${billId}`)
+        fetch(`../backend/user/get_bill_details.php?id=${billId}`)
             .then(res => res.json())
             .then(result => { if (result.success) openBillModal(result.data); });
     }
     if (unpayBtn) {
         const billId = unpayBtn.dataset.id;
         if (confirm('Are you sure you want to mark this bill as unpaid?')) {
-            fetch('../api/user/unpay_bill.php', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id: billId })})
+            fetch('../backend/user/unpay_bill.php', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id: billId })})
             .then(res => res.json()).then(result => { if (result.success) fetchBills(); else alert('Error: ' + result.error); });
         }
     }
@@ -1478,7 +1478,7 @@ document.addEventListener('click', function(e) {
     if (deleteGoalBtn) {
         const goalId = deleteGoalBtn.dataset.id;
         if (confirm('Are you sure you want to permanently delete this goal and all its contributions?')) {
-            fetch('../api/user/delete_goal.php', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id: goalId })})
+            fetch('../backend/user/delete_goal.php', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id: goalId })})
             .then(res => res.json())
             .then(result => { if (result.success) fetchGoals(); else alert('Error: ' + result.error); });
         }
@@ -1489,7 +1489,7 @@ document.addEventListener('click', function(e) {
 
     if (editBudgetBtn) {
         const categoryId = editBudgetBtn.dataset.id;
-        fetch(`../api/user/get_budget_details.php?category_id=${categoryId}`)
+        fetch(`../backend/user/get_budget_details.php?category_id=${categoryId}`)
             .then(res => res.json())
             .then(result => {
                 if (result.success) openBudgetModal(result.data);
@@ -1499,7 +1499,7 @@ document.addEventListener('click', function(e) {
     if (deleteBudgetBtn) {
         const categoryId = deleteBudgetBtn.dataset.id;
         if (confirm('Are you sure you want to delete this budget?')) {
-            fetch('../api/user/delete_budget.php', {
+            fetch('../backend/user/delete_budget.php', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ category_id: categoryId })
@@ -1520,7 +1520,7 @@ billForm.addEventListener('submit', function(e) {
     e.preventDefault();
     const formData = new FormData(this);
     const billId = formData.get('bill_id');
-    const url = billId ? '../api/user/update_bill.php' : '../api/user/add_bill.php';
+    const url = billId ? '../backend/user/update_bill.php' : '../backend/user/add_bill.php';
     
     fetch(url, { method: 'POST', body: formData })
     .then(res => res.json())
@@ -1588,7 +1588,7 @@ function fetchGoals() {
     const container = document.getElementById('goalsContainer');
     container.innerHTML = 'Loading goals...';
 
-    fetch('../api/user/get_goals.php')
+    fetch('../backend/user/get_goals.php')
         .then(res => res.json())
         .then(result => {
             container.innerHTML = '';
@@ -1643,7 +1643,7 @@ document.addEventListener('click', function(e){
         const btn = e.target.closest('.delete-goal-btn');
         const goalId = btn.dataset.id;
         if (confirm('Are you sure you want to permanently delete this goal and all its contributions?')) {
-            fetch('../api/user/delete_goal.php', {
+            fetch('../backend/user/delete_goal.php', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ id: goalId })
@@ -1663,7 +1663,7 @@ document.addEventListener('click', function(e){
 // Handle form submissions
 goalForm.addEventListener('submit', function(e) {
     e.preventDefault();
-    fetch('../api/user/add_goal.php', { method: 'POST', body: new FormData(this) })
+    fetch('../backend/user/add_goal.php', { method: 'POST', body: new FormData(this) })
         .then(res => res.json()).then(result => {
             if(result.success) { closeGoalModal(); fetchGoals(); } else { alert('Error: ' + result.error); }
         });
@@ -1671,7 +1671,7 @@ goalForm.addEventListener('submit', function(e) {
 
 contributionForm.addEventListener('submit', function(e) {
     e.preventDefault();
-    fetch('../api/user/add_contribution.php', { method: 'POST', body: new FormData(this) })
+    fetch('../backend/user/add_contribution.php', { method: 'POST', body: new FormData(this) })
         .then(res => res.json()).then(result => {
             if(result.success) { closeContributionModal(); fetchGoals(); } else { alert('Error: ' + result.error); }
         });
@@ -1711,7 +1711,7 @@ function openBudgetModal(budgetData = null) {
     
     categorySelect.innerHTML = '<option>Loading...</option>';
     
-    fetch('../api/user/get_categories.php')
+    fetch('../backend/user/get_categories.php')
         .then(res => res.json())
         .then(result => {
             categorySelect.innerHTML = '<option value="">Select Category</option>';
@@ -1736,7 +1736,7 @@ function openBudgetModal(budgetData = null) {
                 // **THE FIX:** Add a hidden input to submit the disabled category ID
                 const hiddenInput = document.createElement('input');
                 hiddenInput.type = 'hidden';
-                hiddenInput.name = 'category_id'; // Use the name the api expects
+                hiddenInput.name = 'category_id'; // Use the name the backend expects
                 hiddenInput.value = budgetData.category_id;
                 budgetForm.appendChild(hiddenInput);
                 
@@ -1756,7 +1756,7 @@ function fetchBudgets() {
     const container = document.getElementById('budgetsContainer');
     container.innerHTML = 'Loading budgets...';
 
-    fetch('../api/user/get_budgets.php')
+    fetch('../backend/user/get_budgets.php')
         .then(res => res.json())
         .then(result => {
             container.innerHTML = '';
@@ -1806,7 +1806,7 @@ function fetchBudgets() {
 // Handle form submission
 budgetForm.addEventListener('submit', function(e) {
     e.preventDefault();
-    fetch('../api/user/set_budget.php', { method: 'POST', body: new FormData(this) })
+    fetch('../backend/user/set_budget.php', { method: 'POST', body: new FormData(this) })
         .then(res => res.json()).then(result => {
             if(result.success) {
                 closeBudgetModal();
@@ -1830,7 +1830,7 @@ function generateReport() {
     reportContent.innerHTML = 'Generating report...';
     reportOutput.classList.remove('hidden');
 
-    fetch(`../api/user/get_report_data.php?start_date=${startDate}&end_date=${endDate}`)
+    fetch(`../backend/user/get_report_data.php?start_date=${startDate}&end_date=${endDate}`)
         .then(res => res.json())
         .then(result => {
             if (!result.success) {
@@ -1905,4 +1905,3 @@ function downloadReportAsPDF() {
         pdf.save('financial-report.pdf');
     });
 }
-
