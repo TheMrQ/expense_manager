@@ -1,30 +1,18 @@
 <?php
 require __DIR__ . '/../connection/config.php';
-session_start();
-if (!isset($_SESSION['user_id'])) {
-    exit(json_encode(['success' => false, 'error' => 'Not authenticated']));
-}
-
-$user_id = $_SESSION['user_id'];
-header('Content-Type: application/json');
+$data = json_decode(file_get_contents("php://input"), true);
+$user_id = $data['user_id'] ?? null;
+if (!$user_id) { echo json_encode(['status' => 'error', 'message' => 'Not authenticated.']); exit; }
 
 try {
-    $stmt = $conn->prepare("
-        SELECT c.name, SUM(t.amount) as total
-        FROM transactions t
-        JOIN categories c ON t.category_id = c.id
-        WHERE t.user_id = ? AND c.type = 'expense'
-        GROUP BY c.name
-        HAVING total > 0
-        ORDER BY total DESC
+    $month = date('m'); $year = date('Y');
+    $stmt = $pdo->prepare("
+        SELECT c.name as category_name, SUM(t.amount) as total_amount
+        FROM transactions t JOIN categories c ON t.category_id = c.id
+        WHERE t.user_id = ? AND c.type = 'expense' AND MONTH(t.date) = ? AND YEAR(t.date) = ?
+        GROUP BY c.id ORDER BY total_amount DESC LIMIT 5
     ");
-    $stmt->bind_param("i", $user_id);
-    $stmt->execute();
-    $result = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    $stmt->close();
-
-    echo json_encode(['success' => true, 'data' => $result]);
-} catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Server error']);
-}
+    $stmt->execute([$user_id, $month, $year]);
+    echo json_encode($stmt->fetchAll());
+} catch (PDOException $e) { echo json_encode(['status' => 'error', 'message' => $e->getMessage()]); }
+?>

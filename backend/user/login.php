@@ -1,30 +1,43 @@
 <?php
 require __DIR__ . '/../connection/config.php';
 
+// Vue.js sends data as a JSON payload, so we must read it this way instead of $_POST
+$data = json_decode(file_get_contents("php://input"), true);
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $_POST['username']; // ✅ CORRECT
-    $password = $_POST['password'];
+    $username = $data['username'] ?? '';
+    $password = $data['password'] ?? '';
 
-    // Fetch user from DB
-    $stmt = $conn->prepare("SELECT * FROM users WHERE username = ?");
-    $stmt->bind_param("s", $username);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    if (empty($username) || empty($password)) {
+        echo json_encode(['status' => 'error', 'message' => 'Missing username or password.']);
+        exit;
+    }
 
+    try {
+        // Fetch user from DB using our new PDO connection
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ? OR email = ?");
+        $stmt->execute([$username, $username]); // Allows login with username OR email
+        $user = $stmt->fetch();
 
-    if ($result && $user = $result->fetch_assoc()) {
-        if (password_verify($password, $user['password'])) {
-            // ✅ Success — start session, redirect or respond
+        if ($user && password_verify($password, $user['password'])) {
+            // Success — start session
             session_start();
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
 
-            header("Location: ../../frontend/dashboard.html"); // or wherever your homepage is
-            exit;
+            // Respond with JSON instead of a header redirect!
+            echo json_encode([
+                'status' => 'success',
+                'user' => [
+                    'id' => $user['id'],
+                    'username' => $user['username']
+                ]
+            ]);
         } else {
-            die("Incorrect password.");
+            echo json_encode(['status' => 'error', 'message' => 'Invalid username or password.']);
         }
-    } else {
-        die("Email not found.");
+    } catch (PDOException $e) {
+        echo json_encode(['status' => 'error', 'message' => 'Database error occurred.']);
     }
 }
+?>

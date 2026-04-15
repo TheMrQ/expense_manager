@@ -1,26 +1,16 @@
 <?php
 require __DIR__ . '/../connection/config.php';
-session_start();
-if (!isset($_SESSION['user_id'])) {
-    exit(json_encode(['success' => false, 'error' => 'Not authenticated']));
-}
+$data = json_decode(file_get_contents("php://input"), true);
+$user_id = $data['user_id'] ?? null;
+if (!$user_id) { echo json_encode(['status' => 'error', 'message' => 'Not authenticated.']); exit; }
 
-$user_id = $_SESSION['user_id'];
-$bill_id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
-header('Content-Type: application/json');
-
-if (!$bill_id) {
-    exit(json_encode(['success' => false, 'error' => 'Invalid ID']));
-}
-
-$stmt = $conn->prepare("SELECT id, name, amount, due_date, category_id FROM bills WHERE id = ? AND user_id = ?");
-$stmt->bind_param("ii", $bill_id, $user_id);
-$stmt->execute();
-$bill = $stmt->get_result()->fetch_assoc();
-$stmt->close();
-
-if ($bill) {
-    echo json_encode(['success' => true, 'data' => $bill]);
-} else {
-    echo json_encode(['success' => false, 'error' => 'Bill not found.']);
-}
+try {
+    $stmt = $pdo->prepare("
+        SELECT b.id, b.name, b.amount, b.due_date, b.last_paid_month, c.name as category_name
+        FROM bills b LEFT JOIN categories c ON b.category_id = c.id
+        WHERE b.user_id = ? ORDER BY b.due_date ASC
+    ");
+    $stmt->execute([$user_id]);
+    echo json_encode($stmt->fetchAll());
+} catch (PDOException $e) { echo json_encode(['status' => 'error', 'message' => $e->getMessage()]); }
+?>
