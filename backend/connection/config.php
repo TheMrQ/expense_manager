@@ -1,6 +1,6 @@
 <?php
 // CORS Headers so Vue on localhost:5173 can talk to XAMPP on localhost:80
-header("Access-Control-Allow-Origin: *"); 
+header("Access-Control-Allow-Origin: https://expense-manager-frontend-kappa.vercel.app"); 
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
 
@@ -10,10 +10,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 }
 
 // Local XAMPP Credentials
-$host = "localhost"; 
-$username = "root"; 
-$password = ""; // XAMPP default is an empty password
-$database = "expense_manager";
+$host = "sql100.infinityfree.com"; 
+$username = "if0_41667698"; 
+$password = "Aa01286918912"; // XAMPP default is an empty password
+$database = "if0_41667698_expense";
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$database;charset=utf8", $username, $password);

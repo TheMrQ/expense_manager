@@ -1,35 +1,22 @@
 <?php
 require __DIR__ . '/../connection/config.php';
-session_start();
-if (!isset($_SESSION['user_id'])) {
-    exit(json_encode(['success' => false, 'error' => 'Not authenticated']));
+$data = json_decode(file_get_contents("php://input"), true);
+
+if (!isset($data['user_id'], $data['bill_id'], $data['name'], $data['amount'], $data['due_date'])) {
+    echo json_encode(['status' => 'error', 'message' => 'Missing required fields']); 
+    exit;
 }
 
-$user_id = $_SESSION['user_id'];
-header('Content-Type: application/json');
-
-$bill_id = filter_input(INPUT_POST, 'bill_id', FILTER_VALIDATE_INT);
-$name = filter_input(INPUT_POST, 'name', FILTER_SANITIZE_STRING);
-$amount = filter_input(INPUT_POST, 'amount', FILTER_VALIDATE_FLOAT);
-$due_date = filter_input(INPUT_POST, 'due_date', FILTER_VALIDATE_INT);
-$category_id = filter_input(INPUT_POST, 'category_id', FILTER_VALIDATE_INT);
-
-if (!$bill_id || !$name || !$amount || !$due_date || !$category_id) {
-    exit(json_encode(['success' => false, 'error' => 'All fields are required.']));
-}
+$category_id = !empty($data['category_id']) ? $data['category_id'] : null;
 
 try {
-    $stmt = $conn->prepare("UPDATE bills SET name = ?, amount = ?, due_date = ?, category_id = ? WHERE id = ? AND user_id = ?");
-    $stmt->bind_param("sdiiii", $name, $amount, $due_date, $category_id, $bill_id, $user_id);
-    $stmt->execute();
-
-    if ($stmt->affected_rows > 0) {
-        echo json_encode(['success' => true, 'message' => 'Bill updated successfully.']);
+    $stmt = $pdo->prepare("UPDATE bills SET name = ?, amount = ?, due_date = ?, category_id = ? WHERE id = ? AND user_id = ?");
+    if ($stmt->execute([$data['name'], $data['amount'], $data['due_date'], $category_id, $data['bill_id'], $data['user_id']])) {
+        echo json_encode(['status' => 'success']);
     } else {
-        throw new Exception('Failed to update bill or no changes were made.');
+        echo json_encode(['status' => 'error', 'message' => 'Failed to update bill.']);
     }
-    $stmt->close();
-} catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Database error.']);
+} catch (PDOException $e) { 
+    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]); 
 }
+?>
