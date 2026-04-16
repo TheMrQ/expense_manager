@@ -10,10 +10,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 }
 
 // Local XAMPP Credentials
-$host = "sql100.infinityfree.com"; 
-$username = "if0_41667698"; 
-$password = "Aa01286918912"; // XAMPP default is an empty password
-$database = "if0_41667698_expense";
+$host = ""; 
+$username = ""; 
+$password = ""; 
+$database = "";
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$database;charset=utf8", $username, $password);
