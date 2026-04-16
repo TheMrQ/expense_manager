@@ -1,19 +1,26 @@
 <?php
 require __DIR__ . '/../connection/config.php';
-session_start();
-if (!isset($_SESSION['user_id'])) {
-    exit(json_encode(['success' => false, 'error' => 'Not authenticated']));
+$data = json_decode(file_get_contents("php://input"), true);
+$user_id = $data['user_id'] ?? null;
+
+if (!$user_id) { 
+    echo json_encode(['status' => 'error', 'message' => 'Not authenticated.']); 
+    exit; 
 }
-$user_id = $_SESSION['user_id'];
-header('Content-Type: application/json');
 
 try {
-    $stmt = $conn->prepare("SELECT id, name, target_amount, saved_amount FROM goals WHERE user_id = ? ORDER BY created_at DESC");
-    $stmt->bind_param("i", $user_id);
-    $stmt->execute();
-    $goals = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    echo json_encode(['success' => true, 'data' => $goals]);
-} catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Server error']);
+    // Try to fetch WITH deadline and the correct saved_amount column
+    $stmt = $pdo->prepare("SELECT id, name, target_amount, saved_amount, deadline FROM goals WHERE user_id = ? ORDER BY id DESC");
+    $stmt->execute([$user_id]);
+    echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+} catch (PDOException $e) {
+    // Fallback if deadline column doesn't exist
+    try {
+        $stmt = $pdo->prepare("SELECT id, name, target_amount, saved_amount FROM goals WHERE user_id = ? ORDER BY id DESC");
+        $stmt->execute([$user_id]);
+        echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+    } catch (PDOException $e2) {
+        echo json_encode(['status' => 'error', 'message' => $e2->getMessage()]);
+    }
 }
+?>

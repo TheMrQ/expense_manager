@@ -1,25 +1,22 @@
 <?php
 require __DIR__ . '/../connection/config.php';
-session_start();
-if (!isset($_SESSION['user_id'])) {
-    exit(json_encode(['success' => false, 'error' => 'Not authenticated']));
-}
-$user_id = $_SESSION['user_id'];
-header('Content-Type: application/json');
+$data = json_decode(file_get_contents("php://input"), true);
 
-$name = filter_input(INPUT_POST, 'name', FILTER_SANITIZE_STRING);
-$target_amount = filter_input(INPUT_POST, 'target_amount', FILTER_VALIDATE_FLOAT);
-
-if (!$name || !$target_amount) {
-    exit(json_encode(['success' => false, 'error' => 'All fields are required.']));
+if (!isset($data['user_id'], $data['name'], $data['target_amount'])) {
+    echo json_encode(['status' => 'error', 'message' => 'Missing fields']); exit;
 }
+
+$deadline = !empty($data['deadline']) ? $data['deadline'] : null;
 
 try {
-    $stmt = $conn->prepare("INSERT INTO goals (user_id, name, target_amount) VALUES (?, ?, ?)");
-    $stmt->bind_param("isd", $user_id, $name, $target_amount);
-    $stmt->execute();
-    echo json_encode(['success' => true, 'message' => 'Goal added!']);
-} catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Database error.']);
+    // FIX: We are now inserting 0 into 'saved_amount' to match your schema
+    $stmt = $pdo->prepare("INSERT INTO goals (user_id, name, target_amount, saved_amount, deadline) VALUES (?, ?, ?, 0, ?)");
+    if ($stmt->execute([$data['user_id'], $data['name'], $data['target_amount'], $deadline])) {
+        echo json_encode(['status' => 'success']);
+    } else {
+        echo json_encode(['status' => 'error']);
+    }
+} catch (PDOException $e) { 
+    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]); 
 }
+?>
